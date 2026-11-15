@@ -1,0 +1,11 @@
+{
+  "identities": [
+    {
+      "name": "vivamind",
+      "credentials": [
+        { "accessKey": "vivamind", "secretKey": "change-me-please" }
+      ],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

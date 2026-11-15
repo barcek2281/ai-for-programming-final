@@ -1,0 +1,68 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: vivamind
+  config:
+    # Локальный запуск (mvn spring-boot:run): читаем .env из папки backend или из корня репозитория.
+    # В Docker переменные приходят из env_file, файла там нет — поэтому optional.
+    import: "optional:file:.env[.properties],optional:file:../.env[.properties]"
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/vivamind}
+    username: ${DB_USER:vivamind}
+    password: ${DB_PASSWORD:vivamind}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate          # схему создаёт только Flyway (db/migration)
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 55MB
+
+  ai:
+    openai:
+      api-key: ${OPENROUTER_API_KEY:}
+      base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}
+      timeout: 60s
+      max-retries: 2
+      chat:
+        model: ${LLM_FAST_MODEL:}          # модель по умолчанию, переопределяется в коде на каждый вызов
+      embedding:
+        model: ${EMBEDDING_MODEL:baai/bge-m3}
+        encoding-format: float             # не все провайдеры OpenRouter отдают base64
+        metadata-mode: none                # в эмбеддинг идёт только текст фрагмента, без метаданных
+    vectorstore:
+      pgvector:
+        initialize-schema: true            # таблицу vector_store создаёт сам Spring AI
+        dimensions: ${EMBEDDING_DIM:1024}
+        distance-type: COSINE_DISTANCE
+        index-type: HNSW
+
+vivamind:
+  ai:
+    fast-model: ${LLM_FAST_MODEL:}
+    strong-model: ${LLM_STRONG_MODEL:}
+  jwt:
+    secret: ${JWT_SECRET:change-me-to-a-long-random-string-32-bytes-minimum}
+    ttl-hours: 12
+  s3:
+    endpoint: ${S3_ENDPOINT:http://localhost:8333}
+    region: ${S3_REGION:us-east-1}
+    access-key: ${S3_ACCESS_KEY:vivamind}
+    secret-key: ${S3_SECRET_KEY:change-me-please}
+    bucket: ${S3_BUCKET:vivamind}
+  voice:
+    enabled: ${VOICE_ENABLED:false}        # фаза 2
+  seed:
+    admin-email: ${SEED_ADMIN_EMAIL:admin@vivamind.local}
+    admin-password: ${SEED_ADMIN_PASSWORD:change-me}
+    demo-users: ${SEED_DEMO_USERS:true}
+    demo-password: ${SEED_DEMO_PASSWORD:demo12345}
+
+logging:
+  level:
+    root: INFO
+    kz.vivamind: INFO                      # ответы студентов на уровне INFO не логируются
