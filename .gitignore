@@ -16,3 +16,10 @@ frontend/dist/
 *.iml
 .DS_Store
 Thumbs.db
+
+# Cloudflare
+cloudflare/node_modules/
+cloudflare/.wrangler/
+cloudflare/.env.production
+cloudflare/.dev.vars
+cloudflare/worker-configuration.d.ts

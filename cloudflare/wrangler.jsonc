@@ -1,0 +1,72 @@
+// VivaMind на Cloudflare (Workers Paid, $5/мес).
+//   - фронтенд (frontend/dist) отдаёт Workers Static Assets — Worker для статики не вызывается;
+//   - /api/* Worker пересылает в контейнер со Spring Boot (backend/Dockerfile);
+//   - Postgres + pgvector — Neon, файлы — R2 (S3 API). Секреты — в настройках Worker (см. README.md).
+// Деплоится из GitHub через Workers Builds (Root directory: cloudflare) или локально: npm run deploy.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ai-for-programming-final", // должно совпадать с именем Worker в дашборде, иначе Workers Builds упадёт
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "observability": { "enabled": true },
+
+  // Фронтенд собирается перед каждым wrangler deploy — и локально, и в Workers Builds.
+  "build": {
+    "command": "npm --prefix ../frontend ci && npm --prefix ../frontend run build"
+  },
+
+  "assets": {
+    "directory": "../frontend/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application", // как try_files ... /index.html в nginx.conf
+    "run_worker_first": ["/api/*"]
+  },
+
+  "containers": [
+    {
+      "class_name": "Backend",
+      "image": "../backend/Dockerfile",
+      "image_build_context": "../backend",
+      // Память и диск оплачиваются, пока контейнер запущен; CPU — только за реальную работу.
+      // 0.5 vCPU ускоряет холодный старт Spring, 2 GiB хватает на разбор PDF до 50 МБ.
+      // Если деплой не примет кастомный размер — поставьте "basic" (1/4 vCPU, 1 GiB, 4 GB).
+      "instance_type": { "vcpu": 0.5, "memory_mib": 2048, "disk_mb": 4000 },
+      "max_instances": 1
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "BACKEND", "class_name": "Backend" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Backend"] }],
+
+  // Несекретные настройки backend (секреты — в .env.production).
+  "vars": {
+    "OPENROUTER_BASE_URL": "https://openrouter.ai/api/v1",
+    "LLM_FAST_MODEL": "anthropic/claude-haiku-5.5",
+    "LLM_STRONG_MODEL": "anthropic/claude-haiku-5.5",
+    "EMBEDDING_MODEL": "baai/bge-m3",
+    "EMBEDDING_DIM": "1024",
+    "S3_REGION": "auto",
+    "S3_BUCKET": "vivamind",
+    "VOICE_ENABLED": "false",
+    "SEED_ADMIN_EMAIL": "admin@vivamind.local",
+    "SEED_DEMO_USERS": "true",
+    // Быстрый старт JVM на дробном vCPU: только C1-компилятор; при OOM процесс выходит,
+    // и следующий запрос поднимает контейнер заново.
+    "JAVA_TOOL_OPTIONS": "-XX:MaxRAMPercentage=70 -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError"
+  },
+  "secrets": {
+    "required": [
+      "OPENROUTER_API_KEY",
+      "DB_URL",
+      "DB_USER",
+      "DB_PASSWORD",
+      "S3_ENDPOINT",
+      "S3_ACCESS_KEY",
+      "S3_SECRET_KEY",
+      "JWT_SECRET",
+      "SEED_ADMIN_PASSWORD",
+      "SEED_DEMO_PASSWORD"
+    ]
+  }
+}

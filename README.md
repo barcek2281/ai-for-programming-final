@@ -177,6 +177,13 @@ cd frontend && npm install && npm run dev
 
 ---
 
+## Деплой на Cloudflare
+
+Фронтенд — Workers Static Assets, backend — тот же Docker-образ в Cloudflare Containers (нужен план
+Workers Paid, $5/мес), база — Neon (Postgres + pgvector), файлы — R2. Пошагово: [cloudflare/README.md](cloudflare/README.md).
+
+---
+
 ## Раскрытие использования ИИ
 
 - Код проекта написан ИИ-агентом (Claude Fable 5.2, Claude Code) по техническому заданию команды; решения агента записаны в `docs/decisions.md`.
