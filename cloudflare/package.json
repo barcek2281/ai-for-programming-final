@@ -7,6 +7,7 @@
     "types": "wrangler types",
     "typecheck": "wrangler types && tsc --noEmit",
     "deploy": "wrangler deploy",
+    "deploy:ci": "node scripts/secrets-from-env.mjs && wrangler deploy --secrets-file .secrets.json",
     "secrets": "wrangler secret bulk .env.production",
     "logs": "wrangler tail"
   },

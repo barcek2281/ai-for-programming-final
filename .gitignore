@@ -21,5 +21,6 @@ Thumbs.db
 cloudflare/node_modules/
 cloudflare/.wrangler/
 cloudflare/.env.production
+cloudflare/.secrets.json
 cloudflare/.dev.vars
 cloudflare/worker-configuration.d.ts

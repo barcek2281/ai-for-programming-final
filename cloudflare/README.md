@@ -28,13 +28,17 @@
    Затем R2 → Manage API tokens → Create API token, права **Object Read & Write** на бакет `vivamind`.
    Сохраните Access Key ID, Secret Access Key и адрес S3 (`https://<ACCOUNT_ID>.r2.cloudflarestorage.com`).
 
-## 2. Секреты Worker — до первого push
+## 2. Секреты — как Build variables
 
-Деплой **упадёт** с ошибкой «required secrets have not been set», пока у Worker не заданы все секреты из
-`secrets.required` в `wrangler.jsonc`. Так задумано: backend без базы не выкатится.
+Пока Worker состоит только из статики, дашборд не даёт добавить ему рабочие секреты
+(«Variables cannot be added to a Worker that only has static assets»). Поэтому секреты задаются как
+**Build variables**: Worker → Settings → Build → Variables and secrets. Во время сборки это переменные
+окружения, и `npm run deploy:ci` (скрипт `scripts/secrets-from-env.mjs`) загружает их в секреты Worker
+вместе с деплоем. Пустые переменные скрипт пропускает, поэтому уже заданные секреты Worker не затираются.
 
-Дашборд → Workers & Pages → `ai-for-programming-final` → Settings → **Variables and Secrets** → Add,
-тип **Secret** (не Text), по одному:
+Деплой **упадёт** с ошибкой «required secrets have not been set», если какого-то имени из
+`secrets.required` в `wrangler.jsonc` нет ни в Build variables, ни в секретах Worker. Так задумано:
+backend без базы не выкатится. Нужны все десять:
 
 | Имя | Что |
 | --- | --- |
@@ -47,7 +51,8 @@
 | `SEED_ADMIN_PASSWORD` | пароль администратора `admin@vivamind.local` |
 | `SEED_DEMO_PASSWORD` | пароль демо-аккаунтов `teacher@` / `student@vivamind.local` |
 
-То же самое из терминала: заполните `.env.production` по образцу `.env.production.example`, затем
+Когда у Worker уже есть код, секреты можно задавать и напрямую: Settings → **Variables and Secrets**,
+тип **Secret**. Или из терминала: заполните `.env.production` по образцу `.env.production.example`, затем
 
 ```bash
 npx wrangler login
@@ -69,7 +74,7 @@ npm run secrets
 | Git branch | `master` |
 | Root directory | `cloudflare` |
 | Build command | пусто — фронтенд собирает сам `wrangler deploy` (блок `build` в `wrangler.jsonc`) |
-| Deploy command | `npx wrangler deploy` |
+| Deploy command | `npm run deploy:ci` (переносит Build variables в секреты и деплоит) |
 
 Сборки других веток (preview) контейнер не обновляют — образ выкатывает только `wrangler deploy` из `master`.
 
